@@ -55,7 +55,7 @@ class login extends Controller{
 					}
 					else
 					{
-						if($user['role'] > 4){
+						if($user['role'] > 4 && $user['role'] != 10){
 							$errorMessage = '<p class="bg-danger">This user does not have access to this application</p>';
 						}else{
 							$this->startUserSession($user);

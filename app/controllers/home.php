@@ -874,7 +874,7 @@ class home extends Controller{
 				$title = '[DPT'.$_POST['departmentNumber2'].'] - ['.$departmentReport[0]['DptName'].'] - ['.$this->from.' to '.$this->to.'] - [<span class ="haveToChange">'.count($departmentReport).'</span>  ITEMS]';				
 			}
 			$data = array("class" => $this->classname, "exportURL" => $this->exportURL, "qt" => $queryTitles, "thead" => $theadTitles, 
-				"title" => $title, "tableID" => "report_result", "action" => "department", "reportType" => 'templateWithSectionOrderNegative', 
+				"title" => $title, "tableID" => "report_result", "action" => "department", "reportType" => 'templateWithSectionOrderNegative2', 
 				"from" => $this->from, "to" => $this->to, "report" => $departmentReport, "menu" => $this->userRole);
 		}
 		$this->renderView($data);
