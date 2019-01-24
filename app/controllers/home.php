@@ -972,9 +972,9 @@ class home extends Controller{
 		$data = array("exportURL" => $this->exportURL, "from" => $this->from, "to" => $this->to, "menu" => $this->userRole);
 		$theadTitles = array("VDR #", "VDR NAME", "UPC", "ITEM #", "BRAND", "ITEM DESCRIPTION", "PACK", "SIZE",
 			"CASE COST", "UNIT PRICE", "RETAIL", "ON-HAND", "LAST REC", "LAST REC DATE", "SALES", 
-			"TPR PRICE", "TPR START DATE", "TPR END DATE");
+			"TPR PRICE", "TPR START DATE", "TPR END DATE", "TPR SALES");
 		$queryTitles = array("VdrNo", "VdrName", "UPC", "CertCode", "Brand", "ItemDescription", "Pack", "SizeAlpha",
-			"CaseCost", "unitPrice", "Retail", "onhand", "lastReceiving", "lastReceivingDate", "sales", "tpr", "tprStart", "tprEnd");
+			"CaseCost", "unitPrice", "Retail", "onhand", "lastReceiving", "lastReceivingDate", "sales", "tpr", "tprStart", "tprEnd", "tpr_sales");
 		if(!empty($_POST['upcNumber']))
 		{
 			$_POST['upcNumber'] = $this->completeValue($_POST['upcNumber'], 15);
