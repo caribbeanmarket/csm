@@ -540,6 +540,51 @@ class brdata{
 		return $report ;
 	}
 
+	public function get_upcSalesDetailsReport($upcNumber, $today, $to, $from)
+	{
+		$SQL = "SELECT im.UPC, im.QtySold as sales_units, im.Date as sales_date, id.RecordType as record_type, id.Units AS units, id.Date as date,
+				i.Brand, i.Description AS ItemDescription, i.SizeAlpha, p.BasePRice AS Retail, vc.Vendor as VdrNo, v.VendorName as VdrName, i.Pack, i.SizeAlpha, vc.VendorItem as CertCode, vc.CaseCost, (vc.CaseCost / NULLIF(vc.Pack, 0)) AS unitPrice,
+
+				(SELECT SUM(im.QtySold) FROM dbo.ItemMovement im WHERE im.UPC = p.UPC AND im.Date BETWEEN '".$from."' AND '".$to."') AS sales, 
+
+				(SELECT TOP 1 id.Date FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=i.UPC AND id.Vendor = vc.Vendor ORDER BY id.LastUpdated DESC, id.Date DESC) 
+				AS lastReceivingDate,
+
+				ISNULL((SELECT SUM(id.Units) FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=p.UPC  AND id.Vendor = vc.Vendor AND id.Date = (SELECT TOP 1 id.Date 
+				FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=i.UPC AND id.Vendor = vc.Vendor ORDER BY id.LastUpdated DESC, id.Date DESC)),0) AS lastReceiving,
+
+				(SELECT TOP 1 ISNULL((SELECT TOP 1 ISNULL((SELECT TOP 1 id.Units FROM dbo.InventoryDetail id WHERE UPC= p.UPC AND id.RecordType = 'P' ORDER BY id.Date DESC, id.LastUpdated DESC),0)
+				+ ISNULL((SELECT SUM(Units) FROM dbo.InventoryDetail WHERE RecordType = 'A' AND ((Date > (SELECT TOP 1 Date FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC)) OR (Date = (SELECT TOP 1 Date FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC)) AND LastUpdated > (SELECT TOP 1 LastUpdated FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC) OR (SELECT TOP 1 Date FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC) IS NULL) AND UPC= p.UPC),0) 
+				- ISNULL((SELECT SUM(QtySold) FROM dbo.ItemMovement WHERE Date > (SELECT TOP 1 Date FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC) AND UPC= p.UPC),0) 
+				+ ISNULL((SELECT SUM(Units) FROM dbo.InventoryDetail WHERE RecordType = 'R' AND (LastUpdated > (SELECT TOP 1 LastUpdated FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC) OR (SELECT TOP 1 LastUpdated FROM dbo.InventoryDetail id 
+				WHERE id.RecordType = 'P' AND id.UPC = p.UPC ORDER BY Date DESC, LastUpdated DESC) IS NULL) AND UPC=p.UPC),0) 
+				FROM dbo.InventoryDetail WHERE UPC=p.UPC),99999) FROM dbo.InventoryDetail) AS onhand
+
+				FROM dbo.ItemMovement im
+				CROSS JOIN dbo.InventoryDetail id
+				LEFT JOIN dbo.Item i ON i.UPC = id.UPC
+				LEFT JOIN dbo.Price p ON p.UPC = i.UPC
+				LEFT JOIN dbo.VendorCost vc ON vc.UPC = p.UPC
+				INNER JOIN dbo.Vendors v ON v.Vendor = vc.Vendor 
+				WHERE (im.Date BETWEEN '".$from."' AND '".$to."' AND im.UPC = '".$upcNumber."') 
+				AND (id.Date BETWEEN '".$from."' AND '".$to."' AND id.UPC = '".$upcNumber."' AND id.RecordType != 'P')
+				ORDER BY im.Date DESC";
+
+
+		// Execute query
+		$results = $this->db->query($SQL);
+		// print_r($this->db->errorInfo());die();
+		$report = $results->fetchall(PDO::FETCH_BOTH);
+
+		return $report ;
+	}
+
 	public function get_upcReport($upcNumber, $today, $to, $from)
 	{
 		$SQL ="SELECT DISTINCT vc.UPC, vc.Vendor AS VdrNo, p.BasePRice AS Retail, vc.VendorItem AS CertCode, vc.CaseCost, i.Brand, i.Description AS ItemDescription,

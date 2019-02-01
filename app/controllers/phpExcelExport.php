@@ -38,9 +38,9 @@ class phpExcelExport extends Controller{
 		$this->columnWidths = array("UPC" => 13, "VDR ITEM #" => 11, "BRAND" => 10, "ITEM DESCRIPTION" => 30, "PACK" => 6, "SIZE" => 8, 
 			"CASE COST" => 10, "RETAIL" => 7, "ON-HAND" => 8, "LAST REC" => 12, "ADJUSTMENT" => 12, "LAST REC DATE" => 15, "ADJUSTMENT DATE" => 15, "SALES" => 5, "VDR #" => 7, "VDR NAME" => 22, 
 			"TPR PRICE" => 7, "TPR START" => 15, "TPR END" => 15, "SCT NO" => 8, "SCT NAME" => 30, "DPT NO" => 8, "DPT NAME" => 30, "UNIT PRICE" => 10);
-		$this->columns = array("UPC" => "UPC", "VDR ITEM #" => "CertCode", "BRAND" => "Brand", "ITEM DESCRIPTION" => "ItemDescription", "PACK" => "Pack", "SIZE" => "SizeAlpha", "CASE COST" => "CaseCost", "RETAIL" => "Retail", 
+		$this->columns = array("UPC" => "UPC", "VDR ITEM #" => "CertCode", "BRAND" => "Brand", "ITEM DESCRIPTION" => "ItemDescription", "PACK" => "Pack", "SIZE" => "SizeAlpha", "CASE COST" => "CaseCost", "RETAIL" => "Retail", "UNITS" => "units", "TYPE" => "record_type", "DATE" => "date",
 			"ON-HAND" => "onhand", "LAST REC" => "lastReceiving", "LAST REC DATE" => "lastReceivingDate", "SALES" => "sales", "VDR #" => "VdrNo", "VDR NAME" => "VdrName", "TPR PRICE" => "tpr", "TPR START" => "tprStart", 
-			"TPR END" => "tprEnd", "SCT NO" => "SctNo", "SCT NAME" => "SctName", "DPT NO" => "DptNo", "DPT NAME" => "DptName", "UNIT PRICE" => "unitPrice", "ADJUSTMENT" => "adj", "ADJUSTMENT DATE" => "Date");
+			"TPR END" => "tprEnd", "SCT NO" => "SctNo", "SCT NAME" => "SctName", "DPT NO" => "DptNo", "DPT NAME" => "DptName", "UNIT PRICE" => "unitPrice", "ADJUSTMENT" => "adj", "ADJUSTMENT DATE" => "Date", "TOTAL SALES" => "sales");
 	} 
 
 	public function microtime_float()
@@ -752,6 +752,32 @@ class phpExcelExport extends Controller{
 		$this->saveReport('VendorUPCPriceCompare_' . $upc . '_' . $this->today);
 	}
 
+	public function UPCSalesDetails($upc, $from, $to)
+	{
+		$header = array("A" => "UPC", 
+						"B" => "BRAND", 
+						"C" => "ITEM DESCRIPTION", 
+						"D" => "PACK", 
+						"E" => "SIZE", 
+						"F" => "CASE COST", 
+						"G" => "UNIT PRICE",
+						"H" => "RETAIL", 
+						"I" => "ON-HAND", 
+						"J" => "LAST REC", 
+						"K" => "LAST REC DATE", 
+						"L" => "TOTAL SALES", 
+						"M" => "UNITS", 
+						"N" => "TYPE", 
+						"O" => "DATE");
+		$this->setSheetName("UPC Sales Details");
+		$report = $this->brdata->get_upcSalesDetailsReport($upc, $this->today, $to, $from);
+		$lastItem = count($report) + 4;
+		$bold = array("J", "K", "I", "L", "P");
+		$this->setHeader("UPC SALES DETAILS" ,"[ UPC : " . $upc . " ] - [ ". $from . " - " . $to . " ]"." - [ ".count($report)." ITEMS ]", $header, "upcPriceCompare", $lastItem);
+		$this->setReportDetails($header, $report, $bold, "C", "J", "F");
+		$this->saveReport('UPCSalesDetails_' . $upc . '_' . $this->today);
+	}
+
 	public function vendorItemCode($code, $from, $to)
 	{
 		$header = array("A" => "VDR #", 
@@ -1002,6 +1028,240 @@ class phpExcelExport extends Controller{
 			$last = $key;
 		}
 		return $last;
+	}
+
+	private function setReportDetails($header, $report, $bold, $upc_col = "A", $unit_price_col = "", $itemDescription = "D")
+	{
+		$sales_details = array();
+		$z=0;
+		$y=0; 
+		$details = array();
+		$record_types = array("A" => "ADJUSTMENT", "S" => "SALE", "R" => "RECEIVING");
+		$record_classes = array("A" => "FF990", "S" => "80080", "R" => "99CC0");
+
+		$j = 4;
+		$lastKey = $this->getLastArrayKey($header);
+		for ($i=0;$i<count($report);$i++)
+		{
+			$new_sales_details = array($report[$i]['sales_units'], $report[$i]['sales_date']);
+
+    		$new_details = array($report[$i]['units'], $report[$i]['record_type'], $report[$i]['date']);
+
+    		if(in_array($new_details, $details)){
+
+    		}else{
+    			// die('here');
+    			foreach($header as $key => $value)
+				{
+					if($this->columns[$value] != "UPC")
+					{
+						if(($value == "TPR PRICE" && $report[$i]["tpr"] == ".00")
+						|| ($value == "TPR START" && $report[$i]["tpr"] == ".00") 
+						|| ($value == "TPR END" && $report[$i]["tpr"] == ".00"))
+						{
+							$this->sheet->setCellValue($key . $j, "");
+							if($value == "TPR PRICE")
+					        {
+					        	$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+					        }
+						}
+						else   
+						{
+							if($value == "CASE COST" || $value == "UNIT PRICE")
+					        {
+					        	$this->sheet->setCellValue($key . $j, number_format($report[$i][$this->columns[$value]], 2, ".", ""));
+					        }
+					        else
+					        {	
+					        	if($this->columns[$value] == "units"){
+			        		$this->sheet->setCellValue($key . $j, number_format($report[$i][$this->columns[$value]], 0));
+
+			        		$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB($record_classes[$report[$i]["record_type"]]);
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        	}else{
+			        		if($this->columns[$value] == 'record_type'){
+			        			$this->sheet->setCellValue($key . $j, $record_types[$report[$i][$this->columns[$value]]]);
+			        			$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB($record_classes[$report[$i][$this->columns[$value]]]);
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        		}else{
+			        			if($this->columns[$value] == "date"){
+			        				$this->sheet->setCellValue($key . $j, $report[$i]["date"]);
+			        				$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB($record_classes[$report[$i]["record_type"]]);
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        			}else{
+			        				$this->sheet->setCellValue($key . $j, ltrim($report[$i][$this->columns[$value]], "0"));
+			        			}
+			        		}
+			        	}
+					        }
+						}
+					}
+			        else
+			        {
+			        	if($this->columns[$value] == "units"){
+			        		$this->sheet->setCellValue($key . $j, number_format($report[$i][$this->columns[$value]], 0));
+
+			        		$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB($record_classes[$report[$i][$this->columns[$value]]]);
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        	}else{
+			        		if($this->columns[$value] == 'record_type'){
+			        			$this->sheet->setCellValue($key . $j, $record_types[$report[$i][$this->columns[$value]]]);
+			        			$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB($record_classes[$report[$i][$this->columns[$value]]]);
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        		}else{
+			        			if($this->columns[$value] == "date"){
+			        				$this->sheet->setCellValue($key . $j, ltrim($report[$i][$this->columns[$value]], "0"));
+			        				$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB($record_classes[$report[$i][$this->columns[$value]]]);
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        			}else{
+			        				$this->sheet->setCellValue($key . $j, ltrim($report[$i][$this->columns[$value]], "0"));
+			        			}
+			        		}
+			        	}
+			        }
+			        if($this->columns[$value] == "CertCode")
+					{
+						$this->sheet->setCellValue($key . $j, trim($report[$i][$this->columns[$value]]));
+					}
+			        if($value == "ON-HAND")
+			        {
+			        	if($report[$i][$this->columns[$value]] < 0)
+			        	{
+			        		$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB('FF0000');
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        	}
+			        }
+				} 
+				$details[$y] = $new_details;
+        		$y = $y + 1;
+				$j = $j + 1;
+    		}
+
+    		if(in_array($new_sales_details, $sales_details)){
+
+    		}else{
+    			foreach($header as $key => $value)
+				{
+					if($this->columns[$value] != "UPC")
+					{
+						if(($value == "TPR PRICE" && $report[$i]["tpr"] == ".00")
+						|| ($value == "TPR START" && $report[$i]["tpr"] == ".00") 
+						|| ($value == "TPR END" && $report[$i]["tpr"] == ".00"))
+						{
+							$this->sheet->setCellValue($key . $j, "");
+							if($value == "TPR PRICE")
+					        {
+					        	$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+					        }
+						}
+						else   
+						{
+							if($value == "CASE COST" || $value == "UNIT PRICE")
+					        {
+					        	$this->sheet->setCellValue($key . $j, number_format($report[$i][$this->columns[$value]], 2, ".", ""));
+					        }
+					        else
+					        {	
+					        	if($this->columns[$value] == "units"){
+			        		$this->sheet->setCellValue($key . $j, number_format($report[$i]["sales_units"], 0));
+
+			        		$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB("970ECB");
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        	}else{
+			        		if($this->columns[$value] == 'record_type'){
+			        			$this->sheet->setCellValue($key . $j, "SALE");
+			        			$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB("970ECB");
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        		}else{
+			        			if($this->columns[$value] == "date"){
+			        				$this->sheet->setCellValue($key . $j, $report[$i]["sales_date"]);
+			        				$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB("970ECB");
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        			}else{
+			        				$this->sheet->setCellValue($key . $j, ltrim($report[$i][$this->columns[$value]], "0"));
+			        			}
+			        		}
+			        	}
+					        }
+						}
+					}
+			        else
+			        {
+			        	if($this->columns[$value] == "units"){
+			        		$this->sheet->setCellValue($key . $j, number_format($report[$i]["sales_units"], 0));
+
+			        		$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB("970ECB");
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        	}else{
+			        		if($this->columns[$value] == 'record_type'){
+			        			$this->sheet->setCellValue($key . $j, "SALE");
+			        			$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB("970ECB");
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        		}else{
+			        			if($this->columns[$value] == "date"){
+			        				$this->sheet->setCellValue($key . $j, $report[$i]["sales_date"]);
+			        				$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB("970ECB");
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        			}else{
+			        				$this->sheet->setCellValue($key . $j, ltrim($report[$i][$this->columns[$value]], "0"));
+			        			}
+			        		}
+			        	}
+			        }
+			        if($this->columns[$value] == "CertCode")
+					{
+						$this->sheet->setCellValue($key . $j, trim($report[$i][$this->columns[$value]]));
+					}
+			        if($value == "ON-HAND")
+			        {
+			        	if($report[$i][$this->columns[$value]] < 0)
+			        	{
+			        		$this->sheet->getStyle($key . $j)->getFont()
+							    ->getColor()->setRGB('FF0000');
+				        		$this->sheet->getStyle($key . $j)->getFont()->setBold(true);
+			        	}
+			        }
+				} 
+				$j = $j + 1;
+				$sales_details[$z] = $new_sales_details;
+        		$z = $z + 1;
+    		}
+		}
+		$j = $j - 1;
+		$this->sheet->getStyle("A1:" . $lastKey . $j) ->getAlignment()->setVertical(PHPExcel_Style_Alignment::VERTICAL_CENTER);
+		$this->sheet->getStyle("A3:" . $lastKey . $j)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_CENTER);
+		$this->sheet->getStyle('A3:'.$lastKey.$j)->getFont()->setSize(8);
+		for($z=0;$z<count($bold);$z++)
+		{
+			$this->sheet->getStyle($bold[$z].'3:'.$bold[$z].$j)->getFont()->setBold(true);
+		}
+		if($unit_price_col != "")
+		{
+			$this->sheet->getStyle($unit_price_col."3:" . $unit_price_col . $j)->getFont()
+						    ->getColor()->setRGB('0066CC');
+		}
+		$this->sheet->getStyle($itemDescription."3:" . $itemDescription . $j)->getAlignment()->setHorizontal(PHPExcel_Style_Alignment::HORIZONTAL_LEFT);
+		// $this->sheet->getStyle($upc_col."3:". $upc_col . $j)->getNumberFormat()->setFormatCode('00000');
+		// $this->sheet->getStyle($upc_col."3:". $upc_col . $j)->getNumberFormat()->applyFromArray(
+		// 		array(
+		// 		'code' => PHPExcel_Style_NumberFormat::	FORMAT_NUMBER
+		// 		)
+		// 		);
+		$styleArray = array( 'borders' => array( 'allborders' => array( 'style' => PHPExcel_Style_Border::BORDER_THIN, 'color' => array('rgb' => '000000'), ), ), ); 
+		$this->phpExcel->getActiveSheet()->getStyle('A1:'.$lastKey.$j)->applyFromArray($styleArray);
 	}
 
 

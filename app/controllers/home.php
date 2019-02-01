@@ -983,7 +983,31 @@ class home extends Controller{
 			$upcReport = $this->brdata->get_upcReport($_POST['upcNumber'], $this->today, $_POST['toupc'], $_POST['fromupc']);
 			$title = '[UPC : '.$_POST['upcNumber'].'] - ['.$this->from.' to '.$this->to.'] - ['.count($upcReport).' ITEMS]';
 			$data = array("class" => $this->classname, "exportURL" => $this->exportURL, "qt" => $queryTitles, "thead" => $theadTitles, 
-				"title" => $title, "tableID" => "upcTable", "action" => "UPCPriceCompare", "reportType" => 'defaultTemplate', 
+				"title" => $title, "tableID" => "upcSalesTable", "action" => "UPCPriceCompare", "reportType" => 'defaultTemplate', 
+				"from" => $this->from, "to" => $this->to, "report" => $upcReport, "menu" => $this->userRole);
+		}
+		$this->renderView($data);
+	}
+
+	public function UPCSalesDetails()
+	{
+		$data = array("exportURL" => $this->exportURL, "from" => $this->from, "to" => $this->to, "menu" => $this->userRole);
+		$theadTitles = array("UPC",  "BRAND", "ITEM DESCRIPTION", "PACK", "SIZE",
+			"CASE COST", "UNIT PRICE", "RETAIL", "ON-HAND", "LAST REC", "LAST REC DATE", "TOTAL SALES", "UNITS", 
+			"RECORD TYPE", "DATE");
+		$queryTitles = array( "UPC", "Brand", "ItemDescription", "Pack", "SizeAlpha",
+			"CaseCost", "unitPrice", "Retail", "onhand", "lastReceiving", "lastReceivingDate", "sales", "units", "record_type", "date");
+		if(!empty($_POST['upcNumberSales']))
+		{
+			$_POST['upcNumberSales'] = $this->completeValue($_POST['upcNumberSales'], 15);
+			$this->setDefaultDates($_POST['fromupcsales'], $_POST['toupcsales']);
+			$this->exportURL = "/csm/public/phpExcelExport/UPCSalesDetails/".$_POST['upcNumberSales'] . "/" . $this->from . "/" . $this->to;
+			$upcReport = $this->brdata->get_upcSalesDetailsReport($_POST['upcNumberSales'], $this->today, $_POST['toupcsales'], $_POST['fromupcsales']);
+			// var_dump($upcReport); 
+			// die();
+			$title = '[UPC : '.$_POST['upcNumberSales'].'] - ['.$this->from.' to '.$this->to.'] - ['.count($upcReport).' ITEMS]';
+			$data = array("class" => $this->classname, "exportURL" => $this->exportURL, "qt" => $queryTitles, "thead" => $theadTitles, 
+				"title" => $title, "tableID" => "upcTable", "action" => "UPCPriceCompare", "reportType" => 'defaultTemplateSD', 
 				"from" => $this->from, "to" => $this->to, "report" => $upcReport, "menu" => $this->userRole);
 		}
 		$this->renderView($data);
