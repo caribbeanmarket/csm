@@ -392,8 +392,8 @@ class brdata{
 				i.Description AS ItemDescription, vc.Pack AS Pack,
 				i.SizeAlpha AS SizeAlpha, vc.CaseCost AS CaseCost, p.BasePrice AS Retail, md.MajorDept AS DptNo,
 				(SELECT SUM(im.QtySold) FROM dbo.ItemMovement im WHERE im.UPC = p.UPC AND im.Date BETWEEN '".$from."' AND '".$to."') AS sales, 
-				(SELECT TOP 1 id.Date FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=i.UPC ORDER BY id.LastUpdated DESC, id.Date DESC) AS lastReceivingDate,
-				ISNULL((SELECT TOP 1 id.Units FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=p.UPC ORDER BY id.LastUpdated DESC, id.Date DESC),0) AS lastReceiving,
+				(SELECT TOP 1 id.Date FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=i.UPC AND id.Vendor = v.Vendor ORDER BY id.LastUpdated DESC, id.Date DESC) AS lastReceivingDate,
+				ISNULL((SELECT TOP 1 id.Units FROM dbo.InventoryDetail id WHERE id.RecordType = 'R' AND id.UPC=p.UPC AND id.Vendor = v.Vendor ORDER BY id.LastUpdated DESC, id.Date DESC),0) AS lastReceiving,
 				
 				(SELECT TOP 1 ISNULL((SELECT TOP 1 ISNULL((SELECT TOP 1 id.Units FROM dbo.InventoryDetail id WHERE UPC= p.UPC AND id.RecordType = 'P' ORDER BY id.Date DESC, id.LastUpdated DESC),0)
 				+ ISNULL((SELECT SUM(Units) FROM dbo.InventoryDetail WHERE RecordType = 'A' AND ((Date > (SELECT TOP 1 Date FROM dbo.InventoryDetail id 
