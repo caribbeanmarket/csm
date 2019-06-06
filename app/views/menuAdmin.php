@@ -11,6 +11,13 @@
         <input type='hidden' name = 'toupc' id = 'toupc'>
       </form>
 
+    <a href="#" id="salesUPC" class="list-group-item">UPC Sales details</a>
+      <form method = 'POST' action = '/csm/public/home/UPCSalesDetails' name='upcformsales' id = 'upcformsales'>
+        <input type='hidden' name = 'upcNumberSales' id = 'upcNumberSales'>
+        <input type='hidden' name = 'fromupcsales' id = 'fromupcsales'>
+        <input type='hidden' name = 'toupcsales' id = 'toupcsales'>
+      </form>
+
   <a href="#" id="vendoritemcode" class="list-group-item">Vendor item code</a>
     <form method = 'POST' action = '/csm/public/home/vendorItemCode' name='itemcodeform' id = 'itemcodeform'>
         <input type='hidden' name = 'itemcode' id = 'itemcode'>

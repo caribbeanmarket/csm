@@ -9,4 +9,10 @@ $(document).ready(function() {
     	"paging": false,
     	"ordering" : false
     });
+
+    $('#upcSalesTable').DataTable({
+    	// "lengthMenu": [[-1, 10, 25, 50], ["All", 10, 25, 50]],
+    	"paging": false,
+    	"order" : [14, "DESC"]
+    });
 } );

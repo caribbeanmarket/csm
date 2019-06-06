@@ -391,6 +391,23 @@ jQuery(function($){
 		}
 	});
 
+	$("#salesUPC").click(function(){ 
+		var regex = /[0-9]/;
+		var upcNumber = prompt('Enter the UPC Number : ');
+		if(regex.test(upcNumber))
+		{
+			$("#upcNumberSales").val(upcNumber);
+			$("#fromupcsales").val($('#fromdate').val());
+			$("#toupcsales").val($('#todate').val());
+			document.forms["upcformsales"].submit();
+			$("#upcNumberSales").val('');
+		}
+		else
+		{
+			alert("The UPC number cannot have more than fifteen digits.");
+		}
+	});
+
 	$("#vendorUPC").click(function(){ 
 		var regex = /[0-9]/;
 		var upcNumber = prompt('Enter the UPC Number : ');
